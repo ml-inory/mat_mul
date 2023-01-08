@@ -53,10 +53,11 @@ private:
 };
 
 static float get_clock_speed() {
-    ifstream ifs("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
-    unsigned int clock_speed;
-    ifs >> clock_speed;
-    return clock_speed / 1e6f;
+//    ifstream ifs("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
+//    unsigned int clock_speed;
+//    ifs >> clock_speed;
+//    return clock_speed / 1e6f;
+    return 2.8;
 }
 
 /**
@@ -163,6 +164,22 @@ static void mm_kji(float* A, float* B, float* C, int row, int col) {
     }
 }
 
+static void mm_ikj_tiled(float* A, float* B, float* C, int n, int s) {
+    for (int ih = 0; ih < n; ih+=s) {
+        for (int jh = 0; jh < n; jh+=s) {
+            for (int kh = 0; kh < n; kh+=s) {
+                for (int il = 0; il < s; il++) {
+                    for (int kl = 0; kl < s; kl++) {
+                        for (int jl = 0; jl < s; jl++) {
+                            C[(ih + il) * n + jh + jl] = A[(ih + il) * n + kh + kl] * B[(kh + kl) * n + jh + jl];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     printf("Usage: mm [matrix size, default=1024]\n");
 
@@ -202,24 +219,29 @@ int main(int argc, char** argv) {
         mm_ikj(A, B, C, row, col);
     }
 
-    {
-        Timer timer("jik");
-        mm_jik(A, B, C, row, col);
-    }
+//    {
+//        Timer timer("jik");
+//        mm_jik(A, B, C, row, col);
+//    }
+//
+//    {
+//        Timer timer("jki");
+//        mm_jki(A, B, C, row, col);
+//    }
+//
+//    {
+//        Timer timer("kij");
+//        mm_kij(A, B, C, row, col);
+//    }
+//
+//    {
+//        Timer timer("kji");
+//        mm_kji(A, B, C, row, col);
+//    }
 
     {
-        Timer timer("jki");
-        mm_jki(A, B, C, row, col);
-    }
-
-    {
-        Timer timer("kij");
-        mm_kij(A, B, C, row, col);
-    }
-
-    {
-        Timer timer("kji");
-        mm_kji(A, B, C, row, col);
+        Timer timer("ikj_tiled");
+        mm_ikj_tiled(A, B, C, row, 64);
     }
 
     destroy_matrix(A);
